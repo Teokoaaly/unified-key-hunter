@@ -2,6 +2,7 @@ package engine
 
 import (
 	"context"
+	"fmt"
 	"regexp"
 	"strings"
 
@@ -74,8 +75,10 @@ func (e *Extractor) Extract(ctx context.Context, content []byte, source, repo, p
 	}
 
 	if !containsAny(contentStr, interestingPrefixes) {
+		fmt.Printf("EXTRACTOR DEBUG: no interesting prefixes in %d bytes\n", len(contentStr))
 		return results
 	}
+	fmt.Printf("EXTRACTOR DEBUG: scanning %d bytes for keys\n", len(contentStr))
 
 	for _, pat := range e.patterns {
 		select {

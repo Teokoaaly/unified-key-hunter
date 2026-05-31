@@ -168,26 +168,27 @@ func (p *Pipeline) processMatch(ctx context.Context, src sources.Source, match s
 	match.Source = src.Name()
 	match.Query = query
 
-	// Always fetch raw content when enabled
+	// Try to fetch raw content when enabled.
 	if p.config.FetchContent {
 		content, err := p.fetchContent(ctx, src, match)
 		if err != nil {
-			log.Printf("engine: fetch error %s/%s: %v", match.Repo, match.Path, err)
-			return nil
+			log.Printf("engine: fetch error %s/%s: %v, falling back to line content", match.Repo, match.Path, err)
 		}
-		if content == nil {
-			return nil
+		if content != nil && len(content) > 0 {
+			results := p.extractor.Extract(ctx, content, match.Source, match.Repo, match.Path, match.RawURL, match.Line)
+			if len(results) > 0 {
+				log.Printf("engine: found %d keys in %s/%s", len(results), match.Repo, match.Path)
+			}
+			return p.filterResults(results)
 		}
-		results := p.extractor.Extract(ctx, content, match.Source, match.Repo, match.Path, match.RawURL, match.Line)
-		if len(results) > 0 {
-			log.Printf("engine: found %d keys in %s/%s", len(results), match.Repo, match.Path)
-		}
-		return p.filterResults(results)
 	}
 
-	// Fallback: use Line content directly
+	// Fallback: use Line content directly from Sourcegraph (already has context)
 	if match.Line != "" {
 		results := p.extractor.Extract(ctx, []byte(match.Line), match.Source, match.Repo, match.Path, match.RawURL, match.Line)
+		if len(results) > 0 {
+			log.Printf("engine: found %d keys (line fallback) in %s/%s", len(results), match.Repo, match.Path)
+		}
 		return p.filterResults(results)
 	}
 
