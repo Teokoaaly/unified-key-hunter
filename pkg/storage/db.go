@@ -105,15 +105,9 @@ func (db *KeysDB) Merge(results []detectors.Result) int {
 
 	added := 0
 	for i := range results {
-		r := &results[i]
+		r :=&results[i]
 		if r.Key == "" {
 			continue
-		}
-		// Debug: show first few keys
-		if added < 3 {
-			k := r.Key
-			if len(k) > 40 { k = k[:40] }
-			fmt.Printf("MERGE DEBUG: key=%q type=%s status=%s\n", k, r.Type, r.Status)
 		}
 
 		existing, ok := db.keys[r.Key]

@@ -38,6 +38,7 @@ type Pipeline struct {
 	seen      *SeenSet
 	extractor *Extractor
 	db        *storage.KeysDB
+	uniqueKeyCount int // tracks unique keys for MaxKeys limit, separate from seen (which tracks files)
 }
 
 // NewPipeline creates a new Pipeline.
@@ -91,13 +92,19 @@ func (p *Pipeline) Run(ctx context.Context) error {
 		totalProcessed += len(results)
 
 		// Apply max keys limit.
-		if p.config.MaxKeys > 0 && p.seen.Count() >= p.config.MaxKeys {
-			cancel()
+		if p.config.MaxKeys > 0 && p.uniqueKeyCount >= p.config.MaxKeys {
+			if cancel != nil {
+				cancel()
+			}
 			break
 		}
 
 		merged := p.db.Merge(results)
 		totalMerged += merged
+		p.uniqueKeyCount += merged
+		if merged > 0 {
+			log.Printf("engine: merged %d keys (total unique: %d)", merged, p.db.Count())
+		}
 
 		// Save periodically (every 5 seconds or every 100 results).
 		if merged > 0 && (time.Since(lastSave) > 5*time.Second || totalMerged%100 == 0) {
