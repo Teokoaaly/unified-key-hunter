@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Unified Key Hunter — Dashboard</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'SF Mono', 'Fira Code', 'JetBrains Mono', 'Cascadia Code', 'Consolas', monospace;
+  background: #1a1a2e;
+  color: #e0e0e0;
+  min-height: 100vh;
+  padding: 24px;
+}
+.header {
+  text-align: center;
+  padding: 32px 0 24px;
+  border-bottom: 1px solid #2a2a4a;
+  margin-bottom: 32px;
+}
+.header h1 {
+  font-size: 1.6rem;
+  font-weight: 600;
+  color: #00d4aa;
+  letter-spacing: 0.5px;
+}
+.header .subtitle {
+  margin-top: 6px;
+  font-size: 0.8rem;
+  color: #7a7a9a;
+}
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 32px;
+}
+.card {
+  background: #16213e;
+  border-radius: 8px;
+  padding: 20px 24px;
+  border: 1px solid #2a2a4a;
+  transition: border-color 0.2s;
+}
+.card:hover { border-color: #00d4aa; }
+.card .label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  color: #7a7a9a;
+  margin-bottom: 8px;
+}
+.card .value {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #e0e0e0;
+}
+.card.live .value { color: #00d4aa; }
+.card.warm .value { color: #f0a500; }
+.card.dead .value { color: #e74c3c; }
+.card.balance .value { color: #7c8cf8; }
+.tables {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+  gap: 24px;
+}
+.table-section {
+  background: #16213e;
+  border-radius: 8px;
+  border: 1px solid #2a2a4a;
+  overflow: hidden;
+}
+.table-section h3 {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #00d4aa;
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid #2a2a4a;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+th {
+  text-align: left;
+  padding: 10px 20px;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: #7a7a9a;
+  background: #0f1832;
+  border-bottom: 1px solid #2a2a4a;
+}
+td {
+  padding: 10px 20px;
+  border-bottom: 1px solid #1f2a46;
+}
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: #1a2744; }
+.mono { font-family: 'SF Mono', 'Fira Code', 'JetBrains Mono', 'Consolas', monospace; }
+.num { text-align: right; font-variant-numeric: tabular-nums; }
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+}
+.badge-live { background: rgba(0,212,170,0.15); color: #00d4aa; }
+.badge-warm { background: rgba(240,165,0,0.15); color: #f0a500; }
+.badge-dead { background: rgba(231,76,60,0.15); color: #e74c3c; }
+.loading {
+  text-align: center;
+  padding: 48px;
+  color: #7a7a9a;
+  font-size: 0.9rem;
+}
+.error {
+  background: rgba(231,76,60,0.15);
+  border: 1px solid rgba(231,76,60,0.3);
+  border-radius: 8px;
+  padding: 24px;
+  text-align: center;
+  color: #e74c3c;
+  margin-bottom: 24px;
+}
+.empty {
+  text-align: center;
+  padding: 24px;
+  color: #7a7a9a;
+  font-size: 0.82rem;
+}
+.updated {
+  text-align: right;
+  font-size: 0.7rem;
+  color: #5a5a7a;
+  margin-top: 24px;
+  padding-top: 12px;
+  border-top: 1px solid #2a2a4a;
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Unified Key Hunter — Dashboard</h1>
+  <p class="subtitle" id="updatedAt">Loading...</p>
+</div>
+
+<div id="errorBox"></div>
+
+<div class="cards">
+  <div class="card">
+    <div class="label">Total Keys</div>
+    <div class="value" id="totalKeys">-</div>
+  </div>
+  <div class="card live">
+    <div class="label">LIVE</div>
+    <div class="value" id="liveKeys">-</div>
+  </div>
+  <div class="card warm">
+    <div class="label">WARM</div>
+    <div class="value" id="warmKeys">-</div>
+  </div>
+  <div class="card dead">
+    <div class="label">DEAD</div>
+    <div class="value" id="deadKeys">-</div>
+  </div>
+  <div class="card balance">
+    <div class="label">Total Balance (USD)</div>
+    <div class="value" id="totalBalance">-</div>
+  </div>
+</div>
+
+<div class="tables">
+  <div class="table-section">
+    <h3>Keys by Provider</h3>
+    <div id="providerTable">
+      <p class="loading">Loading...</p>
+    </div>
+  </div>
+  <div class="table-section">
+    <h3>Top 10 Balances</h3>
+    <div id="topBalances">
+      <p class="loading">Loading...</p>
+    </div>
+  </div>
+</div>
+
+<div class="updated" id="footer">Auto-refreshes every 30s</div>
+
+<script>
+const API_KEYS = '/api/keys';
+const API_STATS = '/api/stats';
+
+async function fetchJSON(url) {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+  return res.json();
+}
+
+function redactKey(key) {
+  if (!key || key.length <= 1) return key || '';
+  if (key.length <= 5) return key[0] + '*'.repeat(key.length - 1);
+  return key.slice(0, 4) + '*'.repeat(Math.max(0, key.length - 7)) + key.slice(-3);
+}
+
+function statusBadge(status) {
+  switch ((status || '').toLowerCase()) {
+    case 'verified': return '<span class="badge badge-live">LIVE</span>';
+    case 'unverified': return '<span class="badge badge-warm">WARM</span>';
+    default: return '<span class="badge badge-dead">DEAD</span>';
+  }
+}
+
+function formatUSD(val) {
+  const n = parseFloat(val);
+  if (isNaN(n) || n === 0) return '$0.00';
+  if (n < 0.01) return '$' + n.toFixed(6);
+  return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function formatNum(n) {
+  return n.toLocaleString('en-US');
+}
+
+async function loadDashboard() {
+  const errBox = document.getElementById('errorBox');
+  errBox.innerHTML = '';
+
+  try {
+    const data = await fetchJSON(API_KEYS);
+    const stats = await fetchJSON(API_STATS);
+
+    const keys = data.keys || {};
+    const keyEntries = Object.entries(keys).map(([k, v]) => v);
+
+    document.getElementById('updatedAt').textContent = data.updated_at
+      ? 'Last updated: ' + new Date(data.updated_at).toLocaleString()
+      : '';
+
+    // Cards
+    document.getElementById('totalKeys').textContent = formatNum(stats.total || 0);
+    document.getElementById('liveKeys').textContent = formatNum(stats.live || 0);
+    document.getElementById('warmKeys').textContent = formatNum(stats.warm || 0);
+    document.getElementById('deadKeys').textContent = formatNum(stats.dead || 0);
+    document.getElementById('totalBalance').textContent = formatUSD(stats.total_balance || 0);
+
+    // Provider table
+    const provCounts = {};
+    for (const entry of keyEntries) {
+      const p = (entry.provider || entry.type || 'unknown').toLowerCase();
+      provCounts[p] = (provCounts[p] || 0) + 1;
+    }
+    const provSorted = Object.entries(provCounts).sort((a, b) => b[1] - a[1]);
+    let provHTML = '';
+    if (provSorted.length === 0) {
+      provHTML = '<p class="empty">No keys found</p>';
+    } else {
+      provHTML = '<table><thead><tr><th>Provider</th><th class="num">Count</th></tr></thead><tbody>';
+      for (const [name, count] of provSorted) {
+        provHTML += `<tr><td>${name}</td><td class="num">${formatNum(count)}</td></tr>`;
+      }
+      provHTML += '</tbody></table>';
+    }
+    document.getElementById('providerTable').innerHTML = provHTML;
+
+    // Top 10 balances
+    const sorted = keyEntries
+      .filter(e => e.balance > 0)
+      .sort((a, b) => (b.balance || 0) - (a.balance || 0))
+      .slice(0, 10);
+    let balHTML = '';
+    if (sorted.length === 0) {
+      balHTML = '<p class="empty">No keys with balance</p>';
+    } else {
+      balHTML = '<table><thead><tr><th>Key</th><th>Provider</th><th class="num">Balance</th></tr></thead><tbody>';
+      for (const entry of sorted) {
+        const rk = redactKey(entry.key || '');
+        const p = entry.provider || entry.type || 'unknown';
+        balHTML += `<tr><td class="mono">${rk}</td><td>${p}</td><td class="num">${formatUSD(entry.balance)}</td></tr>`;
+      }
+      balHTML += '</tbody></table>';
+    }
+    document.getElementById('topBalances').innerHTML = balHTML;
+
+  } catch (err) {
+    errBox.innerHTML = `<div class="error">Failed to load data: ${err.message}<br><small>Make sure keys.json exists and the server is running</small></div>`;
+  }
+}
+
+// Initial load
+loadDashboard();
+
+// Auto-refresh every 30 seconds
+setInterval(loadDashboard, 30000);
+</script>
+</body>
+</html>
